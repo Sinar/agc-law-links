@@ -5,10 +5,12 @@ import json
 import bs4
 import requests
 import multiprocessing
+import simplejson
 
 DOMAIN = 'http://www.agc.gov.my'
 
 FIRST_PAGE = 'http://www.agc.gov.my/index.php?option=com_content&view=article&id=1406&Itemid=259'
+
 
 class Law(object):
     def __init__(self, silent = False):
@@ -56,11 +58,12 @@ class Law(object):
         vs = LawPages(r.text)
         storage.extend(vs.extract())
         
+
 class LawPages(object):
     def __init__(self, html):
         self.html = bs4.BeautifulSoup(html, 'lxml')
         self.content = self.html.find('div', {'class': 'article-content'})
-        self.tables = self.content.find_all('table')
+        self.tables = self.content.find_all('table') if self.content else []
 
     def give_pages(self):
         links = self.tables[1].find_all('a')
