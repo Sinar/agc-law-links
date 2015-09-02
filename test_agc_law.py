@@ -15,7 +15,6 @@ class AGCTest(unittest.TestCase):
         self.input_html = """<div class="article-content">
 <table><a href="hoho">hoho</a></table>
 <table><a href="hehe">hehe</a></table></div>"""
-        # import ipdb; ipdb.set_trace()
         self.lp = LawPages(self.input_html)
 
     @patch("agc_law.requests")
