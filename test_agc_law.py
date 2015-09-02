@@ -2,6 +2,8 @@ __author__ = 'lowks'
 
 import unittest
 import json
+import requests_mock
+import agc_law
 from agc_law import Law, LawPages
 from mock import patch, Mock
 
@@ -44,3 +46,17 @@ class AGCTest(unittest.TestCase):
         mock_extract.return_value = "gula"
         data = self.lp.extract_to_json()
         self.assertEqual(data, '{\n    "lom": "gula"\n}')
+
+    @patch("agc_law.requests")
+    def test_private_fetch_law_exception(self, mock_requests):
+        mock_requests.get.return_value.status_code = 404
+        with self.assertRaises(SystemExit):
+            self.law._fetch_law(('test', 'test'), Mock())
+
+    def test_private_fetch_law(self):
+        with requests_mock.mock() as mock_requests:
+            test_text = (self.input_html.rstrip('</div>') +
+                                               """><table><a href="gigi">gigi</table>
+<table><tbody><a href="gogo">gogo</table></tbody></div>""")
+            mock_requests.get(agc_law.FIRST_PAGE, text=test_text, status_code=200)
+            self.law._fetch_law(('test', agc_law.FIRST_PAGE), Mock())
