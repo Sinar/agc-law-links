@@ -2,6 +2,7 @@ __author__ = 'lowks'
 
 import unittest
 import json
+
 import requests_mock
 import agc_law
 from agc_law import Law, LawPages
@@ -63,3 +64,11 @@ class AGCTest(unittest.TestCase):
             mock_law_pages.return_value = "hulahoop"
             self.law._fetch_law(('test', agc_law.FIRST_PAGE), mock_storage)
             self.assertIn(call('hulahoop'), mock_storage.extend.call_args_list)
+
+    @patch("agc_law.LawPages._get_rows")
+    @patch("agc_law.LawPages._extract_row")
+    def test_law_pages_extract(self, mock_extract_rows, mock_get_rows):
+        mock_get_rows.return_value = ["row1", "row2", "row3"]
+        mock_extract_rows.return_value = {'number': 'number1', 'docs': 'doc1'}
+        result = self.lp.extract()
+        self.assertEqual(result, [{'docs': 'doc1', 'number': 'number1'}])
