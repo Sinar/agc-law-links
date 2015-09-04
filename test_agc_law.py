@@ -2,10 +2,11 @@ __author__ = 'lowks'
 
 import unittest
 import json
+
 import requests_mock
 import agc_law
 from agc_law import Law, LawPages
-from mock import patch, Mock
+from mock import patch, Mock, call
 
 
 class AGCTest(unittest.TestCase):
@@ -15,7 +16,6 @@ class AGCTest(unittest.TestCase):
         self.input_html = """<div class="article-content">
 <table><a href="hoho">hoho</a></table>
 <table><a href="hehe">hehe</a></table></div>"""
-        # import ipdb; ipdb.set_trace()
         self.lp = LawPages(self.input_html)
 
     @patch("agc_law.requests")
@@ -53,10 +53,22 @@ class AGCTest(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.law._fetch_law(('test', 'test'), Mock())
 
-    def test_private_fetch_law(self):
+    @patch("agc_law.LawPages.extract")
+    def test_private_fetch_law(self, mock_law_pages):
         with requests_mock.mock() as mock_requests:
             test_text = (self.input_html.rstrip('</div>') +
                                                """><table><a href="gigi">gigi</table>
 <table><tbody><a href="gogo">gogo</table></tbody></div>""")
             mock_requests.get(agc_law.FIRST_PAGE, text=test_text, status_code=200)
-            self.law._fetch_law(('test', agc_law.FIRST_PAGE), Mock())
+            mock_storage = Mock()
+            mock_law_pages.return_value = "hulahoop"
+            self.law._fetch_law(('test', agc_law.FIRST_PAGE), mock_storage)
+            self.assertIn(call('hulahoop'), mock_storage.extend.call_args_list)
+
+    @patch("agc_law.LawPages._get_rows")
+    @patch("agc_law.LawPages._extract_row")
+    def test_law_pages_extract(self, mock_extract_rows, mock_get_rows):
+        mock_get_rows.return_value = ["row1", "row2", "row3"]
+        mock_extract_rows.return_value = {'number': 'number1', 'docs': 'doc1'}
+        result = self.lp.extract()
+        self.assertEqual(result, [{'docs': 'doc1', 'number': 'number1'}])

@@ -13,7 +13,7 @@ FIRST_PAGE = 'http://www.agc.gov.my/index.php?option=com_content&view=article&id
 
 
 class Law(object):
-    def __init__(self, silent = False):
+    def __init__(self, silent=False):
         self.headers = {}
         self.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20100101 Firefox/18.0)'
         self.silent = silent
@@ -52,12 +52,12 @@ class Law(object):
         if not self.silent:
             print 'Requesting page %s' % number
         r = requests.get(link, headers=self.headers)
-        
+
         if r.status_code != 200:
             sys.exit('CONNECTION ERROR!!! HTTP ERROR %d' % r.status_code)
         vs = LawPages(r.text)
         storage.extend(vs.extract())
-        
+
 
 class LawPages(object):
     def __init__(self, html):
@@ -68,10 +68,10 @@ class LawPages(object):
     def give_pages(self):
         links = self.tables[1].find_all('a')
         return map(lambda link: (link.text.strip(), DOMAIN + link['href']), links)
-            
+
     def _get_rows(self):
         return self.tables[3].find('tbody').find_all('td')
-        
+
     def _extract_row(self, rnumber, rcontent):
         number = rnumber.find('p').text.strip()
         p = rcontent.find('p')
@@ -94,21 +94,22 @@ class LawPages(object):
 
         return {'number': number,
                 'docs': ldocs}
-        
+
     def extract(self):
         number, content = 0, 1
         loms = []
         rows = self._get_rows()
         while content < len(rows):
             loms.append(self._extract_row(rows[number],
-                                             rows[content]))
-            number, content = content +1, content + 2
+                                          rows[content]))
+            number, content = content + 1, content + 2
         return loms
 
     def extract_to_json(self):
         data = {'lom': self.extract()}
-        return simplejson.dumps(data,sort_keys=True, indent=4, separators=(',', ': '))
-        
+        return simplejson.dumps(data, sort_keys=True,
+                                indent=4, separators=(',', ': '))
+
 if __name__ == '__main__':
     scraper = Law(True)
     print scraper.dump_to_json()
