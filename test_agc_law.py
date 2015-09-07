@@ -23,18 +23,27 @@ class AGCTests(unittest.TestCase):
     @patch("agc_law.requests")
     @patch("agc_law.LawPages")
     def test_find_laws(self, mock_law_pages, mock_requests):
+
+        """Test for find_laws using mock 200 request"""
+
         mock_requests.get.return_value.status_code = 200
         mock_law_pages.return_value.give_pages.return_value = 'hulahoop'
         self.assertEqual(self.law.find_laws(), 'hulahoop')
 
     @patch("agc_law.requests")
     def test_find_laws_exception(self, mock_requests):
+
+        """Test for find_laws exception using mock 400 status_code"""
+
         mock_requests.get.return_value.status_code = 400
         with self.assertRaises(SystemExit):
             self.law.find_laws()
 
     @patch("agc_law.Law.fetch")
     def test_dump_to_json(self, mock_fetch):
+
+        """Test for dump_to_json using mock_fetch value"""
+
         mock_fetch.return_value = "mypage"
         self.assertTrue(self.law.dump_to_json(),
                         json.dumps({'lom': list("mypage")}))
@@ -45,12 +54,18 @@ class AGCTests(unittest.TestCase):
 
     @patch("agc_law.LawPages.extract")
     def test_extract_to_json(self, mock_extract):
+
+        """Test for extract_to_json using mock extract value"""
+
         mock_extract.return_value = "gula"
         data = self.lp.extract_to_json()
         self.assertEqual(data, '{\n    "lom": "gula"\n}')
 
     @patch("agc_law.requests")
     def test_private_fetch_law_exception(self, mock_requests):
+
+        """Testing _fetch_law with mock 404 request to raise exception"""
+
         mock_requests.get.return_value.status_code = 404
         setattr(self.law, 'silent', True)
         with self.assertRaises(SystemExit):
@@ -58,6 +73,9 @@ class AGCTests(unittest.TestCase):
 
     @patch("agc_law.LawPages.extract")
     def test_private_fetch_law(self, mock_law_pages):
+
+        """Testing _fetch_law with mock requests and capturing stdout"""
+
         with requests_mock.mock() as mock_requests:
             test_text = (self.input_html.rstrip('</div>') +
                                                """><table><a href="gigi">gigi</table>
@@ -83,14 +101,60 @@ class AGCTests(unittest.TestCase):
         result = self.lp.extract()
         self.assertEqual(result, [{'docs': 'doc1', 'number': 'number1'}])
 
-    # def test_law_pages_private_extract_row(self):
-    #     agc_law.DOMAIN = "http://abc.com"
-    #     def fake_find_result(search_term):
-    #         return
-    #
-    #     result = self.lp._extract_row("<p><a href='www.hoho.com'></a></p>",
-    #                                   "<p><a href='www.hoho.com'></a></p>")
-    #     import ipdb; ipdb.set_trace()
+    def test_law_pages_private_extract_row(self):
+
+        """Test asserting correct calls are made in _extract_row"""
+
+        input_html = """<div class="article-content">
+<table>
+<a href="hoho">
+    <p>hoho</p>
+</a>
+</table>
+<table>
+    <a href="hehe">
+        <p>hehe</p>
+    </a>
+</table>
+<table>
+    <a href="hoho">
+        <tbody>
+            <td>
+                <p>hoho</p>
+            </td>
+        </tbody>
+    </a>
+</table>
+<table>
+    <a href="hoho">
+        <tbody>
+        <td>
+            <p>
+                <a href="www.harhar.com">harhar</a>
+            </p>
+        </td>
+    <a href="hoho">
+        <td>
+            <p>
+                <a href="www.herher.com">herher</a>
+            </p>
+        </td>
+    </tbody>
+</table>
+</div>"""
+
+        law_pages = LawPages(input_html)
+        rows = law_pages._get_rows()
+
+        real_value = agc_law.DOMAIN
+
+        agc_law.DOMAIN = "http://abc.com"
+
+        result = self.lp._extract_row(rows[0], rows[1])
+        self.assertEqual(result, {'docs': [{'link': 'http://abc.comwww.herher.com',
+                                            'name': u'herher'}],
+                                  'number': u'harhar'})
+        agc_law.DOMAIN = real_value
 
     @patch("agc_law.multiprocessing.Manager")
     @patch("agc_law.multiprocessing.Process.start")
